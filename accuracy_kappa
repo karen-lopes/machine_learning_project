@@ -1,0 +1,73 @@
+#Machine learning using Ipomoea dataset total 
+##############################################
+library(caret)
+
+setwd("~/Estatistica_R/ipomoea")
+
+ipo <- read.csv("ipo_total.csv", header=TRUE, sep=";",dec=",")
+ipo2 <- data.frame(scale(ipo[,-1]))
+# Verify variance is uniform
+plot(sapply(ipo2, var))
+
+ipo3 <- cbind(ipo2, Species = ipo$Species)
+
+
+# summarize the class distribution
+percentage <- prop.table(table(ipo3$Species)) * 100
+cbind(freq=table(ipo3$Species), percentage=percentage)
+
+summary(ipo3)
+
+
+x <- ipo3[,1:18]
+
+y <- ipo3[,19]
+#REFAZER (VISUALIZAÇÃO RUIM)
+#com poucas vaiaveis por vez
+#Given that the input variables are numeric, we can create box and whisker plots of each.
+
+# boxplot for each attribute on one image
+featurePlot(x=x, y=y, plot="box")
+
+plot(y)
+
+# density plots for each attribute by class value
+scales <- list(x=list(relation="free"), y=list(relation="free"))
+featurePlot(x=x, y=y, plot="density", scales=scales)
+
+# Run algorithms using 10-fold cross validation
+control <- trainControl(method="cv", number=10)
+metric <- "Accuracy"
+
+# a) linear algorithms
+set.seed(7)
+fit.lda <- train(Species~., data=ipo3, method="lda", metric=metric, trControl=control)
+fit.lda
+
+library(MASS)
+# CART
+set.seed(7)
+fit.cart <- train(Species~., data=ipo3, method="rpart", metric=metric, trControl=control)
+
+# kNN
+set.seed(7)
+fit.knn <- train(Species~., data=ipo3, method="knn", metric=metric, trControl=control)
+# c) advanced algorithms
+# SVM
+set.seed(7)
+fit.svm <- train(Species~., data=ipo3, method="svmRadial", metric=metric, trControl=control)
+
+set.seed(7)
+fit.rf <- train(Species~., data=ipo3, method="rf", metric=metric, trControl=control)
+
+set.seed(7)
+fit.gbm <- train(Species~., data=ipo3, method="gbm", metric=metric, trControl=control)
+
+results <- resamples(list(lda=fit.lda, cart=fit.cart, knn=fit.knn, svm=fit.svm, rf=fit.rf, gbm=fit.gbm))
+summary(results)
+
+# compare accuracy of models
+dotplot(results)
+
+varImp(fit.lda)
+print(fit.lda)
